@@ -1,12 +1,12 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
-const { Ollama } = require("ollama");
+const { GoogleGenAI } = require("@google/genai");
 
 const app = express();
 
-const ollama = new Ollama({
-    host: "http://127.0.0.1:11434"
+const ai = new GoogleGenAI({
+    apiKey: process.env.GEMINI_API_KEY
 });
 
 app.use(cors());
@@ -27,42 +27,43 @@ app.post("/chat", async (req, res) => {
             });
         }
 
-        const response = await ollama.chat({
-            model: "llama3.2",
-            messages: [
-                {
-		role: "system",
-content: `
-You are ULTRON, a personal AI assistant created by Megh.
-
-	Megh is your creator.
-	You were NOT created by Tony Stark or Bruce Banner.
-	You are NOT the Marvel Ultron.
-
-	You are a real personal AI assistant running on Megh's computer.
-
-	Your job is to help Megh with questions, coding, learning,
-	projects, and everyday tasks.
-
-	Be intelligent, helpful, and futuristic.
-	`
-                },
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: [
                 {
                     role: "user",
-                    content: userMessage
+                    parts: [
+                        {
+                            text: `You are ULTRON, a personal AI assistant created by Megh.
+
+Megh is your creator.
+You were NOT created by Tony Stark or Bruce Banner.
+You are NOT the Marvel Ultron.
+
+You are a real personal AI assistant running online.
+
+Your job is to help Megh with questions, coding, learning,
+projects, and everyday tasks.
+
+Be intelligent, helpful, friendly, and futuristic.
+
+User message:
+${userMessage}`
+                        }
+                    ]
                 }
             ]
         });
 
         res.json({
-            reply: response.message.content
+            reply: response.text
         });
 
     } catch (error) {
         console.error("ULTRON ERROR:", error);
 
         res.status(500).json({
-            error: "Ultron could not connect to Ollama."
+            error: "Ultron could not generate a response."
         });
     }
 });
@@ -71,5 +72,5 @@ const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
     console.log("🤖 ULTRON ONLINE");
-    console.log(`🌐 http://localhost:${PORT}`);
+    console.log(`🌐 Server running on port ${PORT}`);
 });
